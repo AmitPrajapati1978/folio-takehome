@@ -13,14 +13,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($title === '' || $body === '') {
         $error = 'Title and body are required.';
     } else {
+        // datetime-local gives "YYYY-MM-DDTHH:MM", SQLite wants "YYYY-MM-DD HH:MM:SS"
+        $publish_at = null;
+        $raw_pa = trim($_POST['publish_at'] ?? '');
+        if ($raw_pa !== '') {
+            $publish_at = str_replace('T', ' ', $raw_pa) . ':00';
+        }
+
         $stmt = db()->prepare('
-            INSERT INTO documents (title, body, created_by)
-            VALUES (?, ?, ?)
+            INSERT INTO documents (title, body, created_by, publish_at)
+            VALUES (?, ?, ?, ?)
         ');
-        $stmt->execute([$title, $body, $staff['id']]);
+        $stmt->execute([$title, $body, $staff['id'], $publish_at]);
         $docId = (int) db()->lastInsertId();
 
-        audit_log('create', 'document', $docId, ['title' => $title]);
+        audit_log('create', 'document', $docId, [
+            'title'      => $title,
+            'publish_at' => $publish_at,
+        ]);
 
         header('Location: /admin.php?created=' . $docId);
         exit;
@@ -59,6 +69,10 @@ render_header('Admin', $staff);
             <label for="body">Body</label>
             <textarea id="body" name="body" required></textarea>
         </div>
+        <div class="form-field">
+            <label for="publish_at">Publish at <span style="font-weight:400;color:var(--text-muted)">(optional — leave blank to publish immediately)</span></label>
+            <input type="datetime-local" id="publish_at" name="publish_at">
+        </div>
         <button type="submit" class="btn">Create document</button>
     </form>
 </section>
@@ -75,6 +89,7 @@ render_header('Admin', $staff);
                     <th>Title</th>
                     <th>Creator</th>
                     <th>Created</th>
+                    <th>Publish at</th>
                     <th></th>
                 </tr>
             </thead>
@@ -85,7 +100,12 @@ render_header('Admin', $staff);
                         <td><?= h($d['title']) ?></td>
                         <td><?= h($d['creator_name']) ?></td>
                         <td><?= h($d['created_at']) ?></td>
-                        <td><a href="/share.php?doc=<?= (int) $d['id'] ?>" class="btn-link">Create share →</a></td>
+                        <td><?= $d['publish_at'] ? h($d['publish_at']) : '<span style="color:var(--text-muted)">immediate</span>' ?></td>
+                        <td style="white-space:nowrap">
+                            <a href="/share.php?doc=<?= (int) $d['id'] ?>" class="btn-link">Share →</a>
+                            &nbsp;
+                            <a href="/schedule.php?doc=<?= (int) $d['id'] ?>" class="btn-link">Schedule →</a>
+                        </td>
                     </tr>
                 <?php endforeach ?>
             </tbody>

@@ -27,6 +27,20 @@ if (!$doc) {
     exit;
 }
 
+// Block access if the document has a future publish date
+if ($doc['publish_at'] && $doc['publish_at'] > date('Y-m-d H:i:s')) {
+    http_response_code(403);
+    render_header('Not yet available');
+    ?>
+    <div class="centered-message">
+        <h1>Not yet available</h1>
+        <p>This document will be available after <?= h($doc['publish_at']) ?> (CT).</p>
+    </div>
+    <?php
+    render_footer();
+    exit;
+}
+
 render_header($doc['title']);
 ?>
 
