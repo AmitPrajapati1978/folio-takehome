@@ -49,6 +49,9 @@ render_header('Share · ' . $doc['title'], $staff);
 <a href="/admin.php" class="back-link">← back to admin</a>
 
 <h1 class="page-title">Share "<?= h($doc['title']) ?>"</h1>
+<?php if ($doc['readable_id']): ?>
+    <p class="meta">Readable ID: <code><?= h($doc['readable_id']) ?></code> — use this to reference the document verbally or in email.</p>
+<?php endif ?>
 <p class="page-subtitle">Generate a one-time link for a recipient.</p>
 
 <?php if ($error): ?>
