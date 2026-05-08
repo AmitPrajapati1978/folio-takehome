@@ -19,13 +19,15 @@ $pdo->exec("
         ('freddy@folio.example', 'Freddy Folio')
 ");
 
+$readable_id = generate_readable_id('Welcome Packet');
 $stmt = $pdo->prepare('
-    INSERT INTO documents (title, body, created_by)
-    VALUES (?, ?, 1)
+    INSERT INTO documents (title, body, created_by, readable_id)
+    VALUES (?, ?, 1, ?)
 ');
 $stmt->execute([
     'Welcome Packet',
     "Welcome to Folio!\n\nThis is the body of your welcome packet.",
+    $readable_id,
 ]);
 $docId = (int) $pdo->lastInsertId();
 

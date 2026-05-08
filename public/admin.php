@@ -20,16 +20,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $publish_at = str_replace('T', ' ', $raw_pa) . ':00';
         }
 
+        $readable_id = generate_readable_id($title);
+
         $stmt = db()->prepare('
-            INSERT INTO documents (title, body, created_by, publish_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO documents (title, body, created_by, publish_at, readable_id)
+            VALUES (?, ?, ?, ?, ?)
         ');
-        $stmt->execute([$title, $body, $staff['id'], $publish_at]);
+        $stmt->execute([$title, $body, $staff['id'], $publish_at, $readable_id]);
         $docId = (int) db()->lastInsertId();
 
         audit_log('create', 'document', $docId, [
-            'title'      => $title,
-            'publish_at' => $publish_at,
+            'title'       => $title,
+            'readable_id' => $readable_id,
+            'publish_at'  => $publish_at,
         ]);
 
         header('Location: /admin.php?created=' . $docId);
@@ -86,6 +89,7 @@ render_header('Admin', $staff);
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Readable ID</th>
                     <th>Title</th>
                     <th>Creator</th>
                     <th>Created</th>
@@ -97,6 +101,7 @@ render_header('Admin', $staff);
                 <?php foreach ($docs as $d): ?>
                     <tr>
                         <td class="id">#<?= (int) $d['id'] ?></td>
+                        <td><code style="font-size:0.82rem"><?= $d['readable_id'] ? h($d['readable_id']) : '—' ?></code></td>
                         <td><?= h($d['title']) ?></td>
                         <td><?= h($d['creator_name']) ?></td>
                         <td><?= h($d['created_at']) ?></td>
